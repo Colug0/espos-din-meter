@@ -1,0 +1,91 @@
+language: en-US
+
+reviews:
+  profile: assertive
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    # release-please's PRs only bump the version and changelog of changes
+    # already reviewed; dependency bumps come from automation.
+    ignore_title_keywords:
+      - "chore: release"
+      - "[skip review]"
+      - "WIP"
+    ignore_usernames:
+      - "dependabot[bot]"
+      - "github-actions[bot]"
+
+  # Generated or vendored: never authored here.
+  path_filters:
+    - "!managed_components/**"
+    - "!build*/**"
+    - "!espos/**"
+    - "!ui-dist/**"
+    - "!ui/package-lock.json"
+    - "!dependencies.lock"
+    - "!**/*.bin"
+
+  high_level_summary_instructions: |
+    Write summaries in present tense. Describe what the code does, not what it
+    did. Skip filler like "This PR"; go straight to the change.
+
+  path_instructions:
+    - path: "**/*"
+      instructions: |
+        ## Scope
+
+        espos-din-meter is ESP32-S3 firmware for the M5Stack DIN Meter on
+        espOS: it shows Signal K values on pages configured in the web UI,
+        one page per encoder step, rendered with LVGL 9. There are no host
+        tests; verification happens on the device, so weigh claims of
+        "tested" against whether the PR shows device output.
+
+        ## Invariants (AGENTS.md)
+
+        - LVGL calls only under lvgl_port_lock(). Flag any lv_* call reached
+          without it.
+        - Signal K subscription callbacks run on the stream task: copy and
+          return, never block.
+        - A wrong value never looks right: type mismatch shows XX, stale
+          values turn grey, labels have a fixed width and clip.
+        - Conversion ids are stored in owners' page documents: flag a renamed
+          or removed id in conversions.c.
+
+        ## Memory (no PSRAM)
+
+        Internal RAM is the only heap. Flag a large allocation, a new task,
+        a bigger LVGL pool or buffer, or a stack size change that comes
+        without a measured free-heap figure.
+
+        ## Cross-task state
+
+        Anything written on one task and read on another must be atomic or
+        guarded. Flag plain shared scalars.
+
+        ## Boat configuration must never be committed
+
+        No WiFi SSIDs or passwords, no server IPs or hostnames, no API keys or
+        tokens, no `*.pem`, no page documents from a boat. Flag any literal
+        that looks like a credential or a LAN address.
+
+        ## Comments
+
+        WHY, not WHAT. Flag comments that restate the code and development
+        narrative. Flag stale references to symbols that no longer exist.
+
+        ## Commit / PR conventions
+
+        - Conventional commits: `<type>(<scope>): <subject>`, imperative,
+          lower case, subject <= 50 chars. Titles become release notes.
+        - No version bumps in feature or fix PRs; release-please owns them.
+
+knowledge_base:
+  linked_repositories:
+    - repository: signalk-espOS/espOS
+      instructions: >-
+        The base this firmware builds on, pinned as the espos/ submodule at a
+        release tag: the CMake prologue, sdkconfig layers, partition tables,
+        the httpd, the Signal K client, OTA, the /api/v1 routes and the web
+        UI the ui/ project extends. A submodule bump must build against the
+        new tag.

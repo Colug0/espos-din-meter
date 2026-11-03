@@ -1,0 +1,7 @@
+## espOS components come from the espos/ submodule, which pins its own
+## registry dependencies (cJSON, mDNS, LittleFS); a copy here could only
+## disagree with them.
+dependencies:
+  idf: ">=6.0.0"
+  lvgl/lvgl: "^9.5.0"
+  espressif/esp_lvgl_port: "^2.9.0"

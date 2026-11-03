@@ -1,0 +1,25 @@
+{
+  "name": "espos-din-meter-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "espOS web UI plus the DIN Meter's Pages tab, served gzipped from the LittleFS storage partition",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build && node scripts/gzip-dist.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json"
+  },
+  "dependencies": {
+    "preact": "^11.0.1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.5"
+  }
+}
