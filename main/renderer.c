@@ -49,14 +49,21 @@ static const char *text_for_slot(const dinvalue_slot_t *slot)
     }
 }
 
+static void backlight_timer_cb(lv_timer_t *t)
+{
+    dinmeter_display_backlight_on();
+}
+
 /* The panel holds whatever was in its RAM at power-up; light it only once
- * the first page is drawn. Caller holds the LVGL lock. */
+ * the first page is drawn. The timer runs on the LVGL task after its next
+ * refresh: drawing here with lv_refr_now() overflowed the runtime task's
+ * stack. Caller holds the LVGL lock. */
 static void light_after_first_frame(void)
 {
     static bool s_lit;
     if (!s_lit) {
-        lv_refr_now(NULL);
-        dinmeter_display_backlight_on();
+        lv_timer_t *t = lv_timer_create(backlight_timer_cb, 100, NULL);
+        lv_timer_set_repeat_count(t, 1);
         s_lit = true;
     }
 }
