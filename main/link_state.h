@@ -30,6 +30,9 @@ typedef struct {
  * first connect is not missed. */
 esp_err_t link_state_init(void);
 
+/* The Signal K delta stream is open. Any task. */
+bool link_state_sk_up(void);
+
 /* Current state. Polls espOS; cheap except in LINK_NO_SK, where the token
  * state is read at most every two seconds. Runtime task only. */
 void link_state_get(link_info_t *out);

@@ -12,6 +12,16 @@
       "max": 100,
       "unit": "%",
       "title": "Backlight brightness"
+    },
+    {
+      "name": "night_bright",
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "title": "Night brightness",
+      "description": "Backlight while Signal K reports environment.mode night (signalk-espos-manager publishes it from the sun at the boat's position). 0 keeps the day brightness at night."
     }
   ]
 }

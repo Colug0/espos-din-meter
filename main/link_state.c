@@ -30,6 +30,11 @@ esp_err_t link_state_init(void)
     return err;
 }
 
+bool link_state_sk_up(void)
+{
+    return atomic_load(&s_sk_up);
+}
+
 /* espOS reports the token state only in its status document. */
 static bool token_pending(void)
 {
