@@ -12,7 +12,8 @@ const DAY_LEVELS = [1, 10, 25, 50, 75, 100];
 // 0 = no night setting: the day brightness stays on at night.
 const NIGHT_LEVELS = [0, ...DAY_LEVELS];
 
-type Key = "brightness" | "night_bright";
+type Key = "brightness" | "night_bright" | "dark_timeout_s";
+interface DisplayCfg { brightness?: number; night_bright?: number; dark_enabled?: boolean; dark_timeout_s?: number }
 
 function step(levels: number[], current: number, dir: 1 | -1): number {
   if (dir > 0) return levels.find((l) => l > current) ?? levels[levels.length - 1]!;
@@ -42,18 +43,18 @@ function Stepper({ label, value, levels, busy, onSet, note }: {
 }
 
 export function BrightnessCard() {
-  const [vals, setVals] = useState<Partial<Record<Key, number>>>({});
+  const [vals, setVals] = useState<DisplayCfg>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    get<{ display?: Partial<Record<Key, number>> }>("/config").then(
+    get<{ display?: DisplayCfg }>("/config").then(
       (d) => setVals(d.display ?? {}),
       (e: unknown) => setMsg(errText(e)),
     );
   }, []);
 
-  async function set(key: Key, v: number) {
+  async function set(key: Key | "dark_enabled", v: number | boolean) {
     setBusy(true); setMsg("");
     try {
       await put("/config", { display: { [key]: v } });
@@ -71,7 +72,18 @@ export function BrightnessCard() {
       <Stepper label="Brightness" value={vals.brightness} levels={DAY_LEVELS} busy={busy}
         onSet={(v) => void set("brightness", v)} />
       <Stepper label="Night brightness" value={vals.night_bright} levels={NIGHT_LEVELS} busy={busy}
-        onSet={(v) => void set("night_bright", v)} note="while Signal K reports night; off = same as day" />
+        onSet={(v) => void set("night_bright", v)} note="at night and in dark mode; off = same as day" />
+      <div class="row" style="align-items:center;gap:.5rem;margin:.6rem 0 .3rem;flex-wrap:wrap">
+        <label style="width:9rem">
+          <input type="checkbox" checked={!!vals.dark_enabled} disabled={busy || vals.dark_enabled === undefined}
+            onChange={(e) => void set("dark_enabled", (e.target as HTMLInputElement).checked)} /> Dark mode
+        </label>
+        <span class="muted small">screen off after</span>
+        <input type="number" style="width:4.5rem" min="3" max="600" disabled={busy || !vals.dark_enabled}
+          value={vals.dark_timeout_s ?? 15}
+          onChange={(e) => void set("dark_timeout_s", Number((e.target as HTMLInputElement).value))} />
+        <span class="muted small">s. Long press on the knob turns it on and off; daylight ends it.</span>
+      </div>
       <Msg text={msg} />
     </section>
   );

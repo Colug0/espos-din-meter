@@ -22,6 +22,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "brightness.h"
+#include "darkmode.h"
 #include "link_state.h"
 #include "sound.h"
 #include "runtime_internal.h"
@@ -72,6 +73,8 @@ static esp_err_t board_up(void *arg)
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "encoder init failed (%s)", esp_err_to_name(err));
     }
+    /* After the display: switching dark mode off on load sets the backlight. */
+    ESP_RETURN_ON_ERROR(darkmode_init(), TAG, "dark mode");
     return ESP_OK;
 }
 

@@ -116,6 +116,12 @@ void dinmeter_display_backlight_on(void)
     apply_brightness();
 }
 
+void dinmeter_display_backlight_off(void)
+{
+    atomic_store(&s_backlight_on, false);
+    apply_brightness();
+}
+
 void dinmeter_display_set_brightness(uint8_t percent)
 {
     if (percent < 1) {

@@ -13,6 +13,9 @@ extern "C" {
  * espos_sk is started is fine: the subscription waits for the stream. */
 esp_err_t brightness_start(void);
 
+/* Re-read the settings and set the backlight. Any task. */
+void brightness_apply(void);
+
 /* Once a minute: after 30 minutes without Signal K, forget the last mode
  * and go back to the day brightness. */
 void brightness_tick(void);

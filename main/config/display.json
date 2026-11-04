@@ -22,6 +22,22 @@
       "unit": "%",
       "title": "Night brightness",
       "description": "Backlight while Signal K reports environment.mode night (signalk-espos-manager publishes it from the sun at the boat's position). 0 keeps the day brightness at night."
+    },
+    {
+      "name": "dark_enabled",
+      "type": "bool",
+      "default": false,
+      "title": "Dark mode",
+      "description": "Allow dark mode: a long press on the knob turns it on and off. In dark mode the screen goes dark after the time below; a turn or press wakes it. It ends by itself when Signal K's environment.mode turns to day."
+    },
+    {
+      "name": "dark_timeout_s",
+      "type": "int",
+      "default": 15,
+      "min": 3,
+      "max": 600,
+      "unit": "s",
+      "title": "Dark mode: screen off after"
     }
   ]
 }

@@ -15,6 +15,8 @@
 #include "dinmeter_pages/conversions.h"
 #include "dinmeter_pages/pages.h"
 #include "espos_sk.h"
+#include "darkmode.h"
+#include "dinmeter_hal/display.h"
 #include "link_state.h"
 #include "runtime_internal.h"
 
@@ -235,10 +237,35 @@ static bool slots_equal(const dinvalue_slot_t *a, const dinvalue_slot_t *b)
     return a->state == b->state && strcmp(a->text, b->text) == 0;
 }
 
-/* Setup and approval are what an owner meets first, so they take the whole
- * screen; so does an empty page list. Returns false when pages are shown. */
-static bool message_for(const link_info_t *link, int page_count, char *title, char *main, char *hint, size_t n)
+#define LONG_PRESS_MS 1000
+#define TOAST_MS 1500
+#define DEBOUNCE_POLLS 2
+
+/* A short confirmation on screen, e.g. after a long press. Runtime task. */
+static struct {
+    int64_t until_ms;
+    const char *main;
+    const char *hint;
+} s_toast;
+
+static void toast(int64_t now_ms, const char *main, const char *hint)
 {
+    s_toast.until_ms = now_ms + TOAST_MS;
+    s_toast.main = main;
+    s_toast.hint = hint;
+}
+
+/* A toast, then setup and approval, which are what an owner meets first, take
+ * the whole screen; so does an empty page list. False when a page is shown. */
+static bool message_for(const link_info_t *link, int page_count, int64_t now_ms, char *title, char *main,
+                        char *hint, size_t n)
+{
+    if (now_ms < s_toast.until_ms) {
+        snprintf(title, n, "Dark mode");
+        snprintf(main, n, "%s", s_toast.main);
+        snprintf(hint, n, "%s", s_toast.hint);
+        return true;
+    }
     switch (link->state) {
     case LINK_SETUP:
         snprintf(title, n, "WiFi setup: join");
@@ -281,9 +308,61 @@ static void runtime_task(void *arg)
     dinvalue_slot_t last_slots[DINPAGE_MAX_VALUES] = {0};
     char last_msg[3 * 48] = "";
     int last_dot = -1;
+    int last_step = dinmeter_input_get_count() / 2;
+    int page_pos = 0;
+    bool btn_down = false;
+    int btn_stable = 0;
+    int64_t press_start_ms = 0;
+    bool long_done = false;
+    int64_t last_use_ms = esp_timer_get_time() / 1000;
+    bool asleep = false;
 
     for (;;) {
+        int64_t now_ms = esp_timer_get_time() / 1000;
         int step = dinmeter_input_get_count() / 2;
+        int delta = step - last_step;
+        last_step = step;
+
+        bool pressed_now = false;
+        bool raw = dinmeter_input_button_pressed();
+        btn_stable = raw == btn_down ? 0 : btn_stable + 1;
+        if (btn_stable >= DEBOUNCE_POLLS) {
+            btn_down = raw;
+            btn_stable = 0;
+            if (btn_down) {
+                pressed_now = true;
+                press_start_ms = now_ms;
+                long_done = false;
+            }
+        }
+        bool used = delta != 0 || pressed_now;
+        if (btn_down && !long_done && now_ms - press_start_ms >= LONG_PRESS_MS) {
+            long_done = true;
+            used = true;
+            if (darkmode_enabled()) {
+                darkmode_set(!darkmode_active());
+                toast(now_ms, darkmode_active() ? "On" : "Off", darkmode_active() ? "screen sleeps when unused" : "");
+            } else {
+                toast(now_ms, "Not enabled", "turn it on under Pages > Display");
+            }
+        }
+        if (used) {
+            last_use_ms = now_ms;
+        }
+
+        /* The turn or press that wakes the screen only wakes it: in the dark
+         * nobody sees which page they would have turned to. */
+        if (asleep && (used || !darkmode_active())) {
+            asleep = false;
+            delta = 0;
+            dinmeter_display_backlight_on();
+        } else if (!asleep && darkmode_active() && now_ms - last_use_ms > (int64_t)darkmode_timeout_ms() &&
+                   now_ms >= s_toast.until_ms) {
+            asleep = true;
+            dinmeter_display_backlight_off();
+        }
+        page_pos += delta;
+
         link_info_t link;
         link_state_get(&link);
 
@@ -293,7 +372,7 @@ static void runtime_task(void *arg)
         dinvalue_slot_t current[DINPAGE_MAX_VALUES] = {0};
         int index = -1;
         if (n > 0) {
-            index = ((step % n) + n) % n;
+            index = ((page_pos % n) + n) % n;
             page_copy = s_pages[index];
             for (int v = 0; v < page_copy.value_count; v++) {
                 current[v].state = effective_state(index, v, page_copy.stale_timeout_ms);
@@ -303,7 +382,7 @@ static void runtime_task(void *arg)
         xSemaphoreGive(s_lock);
 
         char title[48], main[48], hint[48];
-        if (message_for(&link, n, title, main, hint, sizeof(title))) {
+        if (message_for(&link, n, now_ms, title, main, hint, sizeof(title))) {
             char key[sizeof(last_msg)];
             snprintf(key, sizeof(key), "%s\n%s\n%s", title, main, hint);
             if (strcmp(key, last_msg) != 0) {

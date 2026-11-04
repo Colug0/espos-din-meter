@@ -21,6 +21,9 @@ extern "C" {
 esp_err_t dinmeter_display_init(void);
 void dinmeter_display_backlight_on(void);
 
+/* Backlight off (panel content kept), e.g. for a sleeping screen. */
+void dinmeter_display_backlight_off(void);
+
 /* Backlight brightness, 1..100 %. Takes effect at once if the backlight is
  * on, else when it is switched on. Any task. */
 void dinmeter_display_set_brightness(uint8_t percent);
