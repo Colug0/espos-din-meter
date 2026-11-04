@@ -17,6 +17,7 @@
 #include "esp_event.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_lvgl_port.h"
 #include "esp_wifi.h"
 #include "espos.h"
 #include "freertos/FreeRTOS.h"
@@ -25,6 +26,7 @@
 #include "darkmode.h"
 #include "link_state.h"
 #include "sound.h"
+#include "lvgl.h"
 #include "runtime_internal.h"
 
 static const char *TAG = "din_meter";
@@ -37,6 +39,31 @@ static void log_heap(const char *stage)
     const uint32_t caps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
     ESP_LOGI(TAG, "heap %-8s %6u free, %6u largest, %6u min", stage, (unsigned)heap_caps_get_free_size(caps),
              (unsigned)heap_caps_get_largest_free_block(caps), (unsigned)heap_caps_get_minimum_free_size(caps));
+}
+
+/* Stack reserve (smallest free ever, bytes) of this firmware's own tasks and
+ * the LVGL pool's peak use: the numbers to size them from. */
+static void log_budget(void)
+{
+    static const char *const tasks[] = {"dinmeter_rt", "din_sound", "taskLVGL", "main"};
+    char line[128];
+    int len = 0;
+    for (size_t i = 0; i < sizeof(tasks) / sizeof(tasks[0]); i++) {
+        TaskHandle_t h = xTaskGetHandle(tasks[i]);
+        if (h) {
+            len += snprintf(line + len, sizeof(line) - len, " %s %u", tasks[i],
+                            (unsigned)uxTaskGetStackHighWaterMark(h));
+        }
+    }
+    ESP_LOGI(TAG, "stack reserve:%s", line);
+    if (s_panel_up) {
+        lv_mem_monitor_t mon;
+        lvgl_port_lock(0);
+        lv_mem_monitor(&mon);
+        lvgl_port_unlock();
+        ESP_LOGI(TAG, "lvgl pool %u used of %u, peak %u, frag %u%%", (unsigned)(mon.total_size - mon.free_size),
+                 (unsigned)mon.total_size, (unsigned)mon.max_used, (unsigned)mon.frag_pct);
+    }
 }
 
 /* The ESP32 restarts without deauthenticating, so the access point still
@@ -109,6 +136,7 @@ void app_main(void)
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(60000));
         log_heap("running");
+        log_budget();
         if (s_panel_up) {
             brightness_tick();
         }

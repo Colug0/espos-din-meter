@@ -432,7 +432,9 @@ esp_err_t dinmeter_runtime_start(void)
     dinmeter_pages_on_change(resync_pages_and_subscriptions, NULL);
     resync_pages_and_subscriptions(NULL);
 
-    if (xTaskCreate(runtime_task, "dinmeter_rt", 6144, NULL, 5, NULL) != pdPASS) {
+    /* 6 KB left 2.5 KB unused, measured across the token check and a
+     * dual-page redraw. */
+    if (xTaskCreate(runtime_task, "dinmeter_rt", 5120, NULL, 5, NULL) != pdPASS) {
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;
