@@ -94,6 +94,11 @@ sdkconfig: espOS's defaults first, this repo's `sdkconfig.defaults` holds only
 what differs, a git-ignored `sdkconfig.local` takes bench overrides. Defaults
 reach a fresh `sdkconfig` only, so delete it after changing any of them.
 
+An OTA update replaces the app only. The web UI lives in the `storage`
+partition (`espos_project_ui_partition(DIR ...)`), which only a USB flash
+writes, so a release that changes `ui/` needs a USB flash to bring the new
+page to a device.
+
 Verify on the device: `curl http://<device>/api/v1/logs?limit=200`,
 `/api/v1/system/info`, `/api/v1/sk/status`, `/api/v1/pages`.
 
@@ -126,9 +131,20 @@ dependencies stay permissive.
   `deps`.
 * Commits end with `Co-Authored-By: Claude …`, PR descriptions with
   "🤖 Generated with Claude Code".
-* One logical change per PR. Squash-merge every PR.
+* Every change goes through a pull request from its own branch; nothing is
+  pushed to `main` directly. One logical change per PR. Squash-merge every
+  PR with the PR title as the subject:
+  `gh pr merge N --squash --subject "<PR title> (#N)" --match-head-commit <sha>`.
+* CodeRabbit reviews each PR (`.coderabbit.yaml`, profile "assertive"). Check
+  every comment against the code: fix what holds, often re-testing on the
+  device, and answer what does not with the reason. A reply on a review
+  thread ends with `_🤖 Addressed by [Claude Code](https://claude.com/claude-code)_`;
+  resolve the thread after answering. If no review starts, comment
+  `@coderabbitai review`.
 * No version bumps in feature or fix PRs; release-please owns `version.txt`.
-* Never commit or push unless the owner asks.
+  Its release PR gets no checks (opened with the workflow token): close and
+  reopen it once by hand.
+* Never commit, push or merge unless the owner asks.
 
 ## Pull requests to other repos
 
