@@ -67,7 +67,9 @@ reviews:
 
         No WiFi SSIDs or passwords, no server IPs or hostnames, no API keys or
         tokens, no `*.pem`, no page documents from a boat. Flag any literal
-        that looks like a credential or a LAN address.
+        that looks like a credential or a LAN address. Exception: 192.168.4.1
+        is the espOS setup portal's fixed address on every device, not boat
+        configuration.
 
         ## Comments
 
