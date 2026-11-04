@@ -44,8 +44,10 @@ signed OTA are espOS. This repo is the display on top.
   the LVGL port. Other values show noise along two edges.
 * docs.m5stack.com swaps the button (GPIO42) and buzzer (GPIO3) pins. The
   M5Unified source is right.
-* Backlight PWM (LEDC on GPIO9) once left the panel black. It was never
-  isolated; test it on its own before building on it.
+* GPIO9 drives the EN pin of an AW35122 load switch that powers the
+  backlight, so dimming is PWM on that switch. At 5 kHz the panel stayed
+  black; 200 Hz (M5Stack's own demo) works. Every LEDC timer on the S3 shares
+  one clock source, so the backlight and buzzer timers both use APB.
 * The ESP32-S3 restarts without deauthenticating. The boat's MikroTik then
   keeps the old station state and delivers nothing to the device for minutes,
   so `app_main.c` drops the first association of every boot. Check the router

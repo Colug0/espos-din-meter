@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "dinmeter_hal/display.h"
 
+#include <math.h>
 #include <stdatomic.h>
 
 #include "dinmeter_hal/board.h"
@@ -19,14 +20,20 @@
 #define LCD_GAP_X 40
 #define LCD_GAP_Y 52
 
-/* Backlight PWM on GPIO9 at a low frequency, as M5GFX drives M5 backlights:
- * an earlier attempt at 5 kHz left the panel black. 1 % maps to a duty of
- * 16/255 rather than near zero, so the lowest setting stays readable. */
+/* GPIO9 drives the EN pin of an AW35122 load switch (U6 in the DIN Meter
+ * schematic) that powers the backlight LEDs, so brightness is PWM on that
+ * switch. It turns on gently: at 5 kHz the panel stayed black; 200 Hz is what
+ * M5Stack's own DinMeter demo uses (M5DinMeter-UserDemo, ft_disp_lgfx_cfg.hpp). 1 % maps to a duty of 64/1023, not near zero, so the lowest
+ * setting stays readable; the percentage goes through a gamma curve because
+ * the eye sees brightness logarithmically and a linear scale left the top
+ * half looking the same.
+ * Every LEDC timer on the S3 shares one clock source; APB with 10 bits
+ * reaches both 200 Hz here and the buzzer's range. */
 #define BL_LEDC_TIMER LEDC_TIMER_1
 #define BL_LEDC_CHANNEL LEDC_CHANNEL_7
-#define BL_FREQ_HZ 256
-#define BL_DUTY_MIN 16
-#define BL_DUTY_MAX 255
+#define BL_FREQ_HZ 200
+#define BL_DUTY_MIN 64
+#define BL_DUTY_MAX 1023
 
 static const char *TAG = "din_display";
 static atomic_uint s_brightness = 80;
@@ -38,10 +45,10 @@ esp_err_t dinmeter_display_init(void)
 {
     ledc_timer_config_t timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT,
+        .duty_resolution = LEDC_TIMER_10_BIT,
         .timer_num = BL_LEDC_TIMER,
         .freq_hz = BL_FREQ_HZ,
-        .clk_cfg = LEDC_AUTO_CLK,
+        .clk_cfg = LEDC_USE_APB_CLK,
     };
     ESP_RETURN_ON_ERROR(ledc_timer_config(&timer), TAG, "backlight timer");
     ledc_channel_config_t channel = {
@@ -96,8 +103,8 @@ static void apply_brightness(void)
 {
     uint32_t duty = 0;
     if (atomic_load(&s_backlight_on)) {
-        unsigned pct = atomic_load(&s_brightness);
-        duty = BL_DUTY_MIN + (BL_DUTY_MAX - BL_DUTY_MIN) * (pct - 1) / 99;
+        float x = (atomic_load(&s_brightness) - 1) / 99.0f;
+        duty = BL_DUTY_MIN + (uint32_t)lroundf((BL_DUTY_MAX - BL_DUTY_MIN) * powf(x, 2.2f));
     }
     ledc_set_duty(LEDC_LOW_SPEED_MODE, BL_LEDC_CHANNEL, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, BL_LEDC_CHANNEL);

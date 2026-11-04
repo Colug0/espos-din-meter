@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { errText, get, put } from "../../../espos/ui/src/api";
 import { Msg } from "../../../espos/ui/src/app";
+import { BrightnessCard } from "./brightness";
 
 interface Conversion { id: string; label: string; unit: string }
 
@@ -166,6 +167,7 @@ export function PagesPage() {
     <>
       <h1>Pages</h1>
       <div class="grid">
+        <BrightnessCard />
         <section class="card wide">
           <h2>Displayed pages</h2>
           <p class="muted small">
