@@ -15,6 +15,7 @@
 #include "dinmeter_pages/conversions.h"
 #include "dinmeter_pages/pages.h"
 #include "espos_sk.h"
+#include "link_state.h"
 #include "runtime_internal.h"
 
 static const char *TAG = "din_runtime";
@@ -234,15 +235,57 @@ static bool slots_equal(const dinvalue_slot_t *a, const dinvalue_slot_t *b)
     return a->state == b->state && strcmp(a->text, b->text) == 0;
 }
 
+/* Setup and approval are what an owner meets first, so they take the whole
+ * screen; so does an empty page list. Returns false when pages are shown. */
+static bool message_for(const link_info_t *link, int page_count, char *title, char *main, char *hint, size_t n)
+{
+    switch (link->state) {
+    case LINK_SETUP:
+        snprintf(title, n, "WiFi setup: join");
+        snprintf(main, n, "%s", link->portal_ssid);
+        snprintf(hint, n, "then open http://%s", link->portal_ip);
+        return true;
+    case LINK_APPROVE:
+        snprintf(title, n, "Signal K");
+        snprintf(main, n, "Approve access");
+        snprintf(hint, n, "Security > Access Requests");
+        return true;
+    default:
+        break;
+    }
+    if (page_count == 0) {
+        snprintf(title, n, "No pages yet. Open");
+        snprintf(main, n, "%s.local", link->hostname);
+        snprintf(hint, n, "and add them under Pages");
+        return true;
+    }
+    return false;
+}
+
+static link_dot_t dot_for(link_state_t state)
+{
+    switch (state) {
+    case LINK_NO_NETWORK:
+        return LINK_DOT_RED;
+    case LINK_NO_SK:
+        return LINK_DOT_AMBER;
+    default:
+        return LINK_DOT_NONE;
+    }
+}
+
 static void runtime_task(void *arg)
 {
     (void)arg;
     int last_index = -1;
     dinvalue_slot_t last_slots[DINPAGE_MAX_VALUES] = {0};
-    bool showed_no_pages = false;
+    char last_msg[3 * 48] = "";
+    int last_dot = -1;
 
     for (;;) {
         int step = dinmeter_input_get_count() / 2;
+        link_info_t link;
+        link_state_get(&link);
 
         xSemaphoreTake(s_lock, portMAX_DELAY);
         int n = s_page_count;
@@ -259,14 +302,18 @@ static void runtime_task(void *arg)
         }
         xSemaphoreGive(s_lock);
 
-        if (n == 0) {
-            if (!showed_no_pages) {
-                renderer_show_no_pages();
-                showed_no_pages = true;
-                last_index = -1;
+        char title[48], main[48], hint[48];
+        if (message_for(&link, n, title, main, hint, sizeof(title))) {
+            char key[sizeof(last_msg)];
+            snprintf(key, sizeof(key), "%s\n%s\n%s", title, main, hint);
+            if (strcmp(key, last_msg) != 0) {
+                renderer_show_message(title, main, hint);
+                snprintf(last_msg, sizeof(last_msg), "%s", key);
+                last_index = -1; /* redraw the page when it returns */
+                last_dot = -1;
             }
         } else {
-            showed_no_pages = false;
+            last_msg[0] = '\0';
             bool changed = index != last_index;
             for (int v = 0; v < page_copy.value_count && !changed; v++) {
                 changed = !slots_equal(&current[v], &last_slots[v]);
@@ -281,6 +328,11 @@ static void runtime_task(void *arg)
                 for (int v = 0; v < DINPAGE_MAX_VALUES; v++) {
                     last_slots[v] = current[v];
                 }
+            }
+            link_dot_t dot = dot_for(link.state);
+            if ((int)dot != last_dot) {
+                renderer_set_link_dot(dot);
+                last_dot = (int)dot;
             }
         }
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -301,7 +353,7 @@ esp_err_t dinmeter_runtime_start(void)
     dinmeter_pages_on_change(resync_pages_and_subscriptions, NULL);
     resync_pages_and_subscriptions(NULL);
 
-    if (xTaskCreate(runtime_task, "dinmeter_rt", 4096, NULL, 5, NULL) != pdPASS) {
+    if (xTaskCreate(runtime_task, "dinmeter_rt", 6144, NULL, 5, NULL) != pdPASS) {
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;

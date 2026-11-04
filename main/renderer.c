@@ -21,6 +21,15 @@ static lv_obj_t *s_dual_caption[2];
 static lv_obj_t *s_dual_value[2];
 static lv_obj_t *s_dual_unit[2];
 
+/* Message screen: setup, approval, no pages. */
+static lv_obj_t *s_msg_title;
+static lv_obj_t *s_msg_main;
+static lv_obj_t *s_msg_hint;
+
+/* Link problem on a page screen: red without network, amber without
+ * Signal K. Hidden while all is well. */
+static lv_obj_t *s_link_dot;
+
 static lv_color_t color_for_state(slot_state_t state)
 {
     switch (state) {
@@ -72,6 +81,25 @@ static void set_single_visible(bool visible)
 {
     lv_obj_set_hidden(s_label_value, !visible);
     lv_obj_set_hidden(s_label_unit, !visible);
+}
+
+static void set_msg_visible(bool visible)
+{
+    lv_obj_set_hidden(s_msg_title, !visible);
+    lv_obj_set_hidden(s_msg_main, !visible);
+    lv_obj_set_hidden(s_msg_hint, !visible);
+}
+
+static lv_obj_t *msg_label(lv_obj_t *scr, const lv_font_t *font, lv_color_t color, lv_align_t align, int y)
+{
+    lv_obj_t *l = lv_label_create(scr);
+    lv_obj_set_style_text_font(l, font, 0);
+    lv_obj_set_style_text_color(l, color, 0);
+    lv_obj_set_width(l, 232);
+    lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(l, LV_LABEL_LONG_MODE_CLIP);
+    lv_obj_align(l, align, 0, y);
+    return l;
 }
 
 static void set_dual_visible(bool visible)
@@ -157,6 +185,19 @@ esp_err_t renderer_init(void)
         lv_obj_align(s_dual_unit[i], LV_ALIGN_BOTTOM_MID, col_x[i], -4);
     }
     set_dual_visible(false);
+
+    s_msg_title = msg_label(scr, &lv_font_montserrat_14, lv_color_hex(0xA0A0A0), LV_ALIGN_TOP_MID, 10);
+    s_msg_main = msg_label(scr, &lv_font_montserrat_24, lv_color_white(), LV_ALIGN_CENTER, 0);
+    s_msg_hint = msg_label(scr, &lv_font_montserrat_14, lv_color_hex(0xA0A0A0), LV_ALIGN_BOTTOM_MID, -10);
+    set_msg_visible(false);
+
+    s_link_dot = lv_obj_create(scr);
+    lv_obj_remove_style_all(s_link_dot);
+    lv_obj_set_size(s_link_dot, 10, 10);
+    lv_obj_set_style_radius(s_link_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(s_link_dot, LV_OPA_COVER, 0);
+    lv_obj_align(s_link_dot, LV_ALIGN_TOP_LEFT, 4, 4);
+    lv_obj_set_hidden(s_link_dot, true);
     lvgl_port_unlock();
 
     ESP_LOGI(TAG, "LVGL display ready (landscape %dx%d)", DINMETER_DISPLAY_NATIVE_H, DINMETER_DISPLAY_NATIVE_W);
@@ -166,6 +207,7 @@ esp_err_t renderer_init(void)
 void renderer_show_page(const dinpage_t *page, const dinvalue_slot_t *slot)
 {
     lvgl_port_lock(0);
+    set_msg_visible(false);
     set_dual_visible(false);
     set_single_visible(true);
     lv_obj_set_hidden(s_label_top, false);
@@ -180,6 +222,7 @@ void renderer_show_page(const dinpage_t *page, const dinvalue_slot_t *slot)
 void renderer_show_dual_page(const dinpage_t *page, const dinvalue_slot_t slots[2])
 {
     lvgl_port_lock(0);
+    set_msg_visible(false);
     set_single_visible(false);
     set_dual_visible(true);
     lv_obj_set_hidden(s_label_top, true);
@@ -193,16 +236,29 @@ void renderer_show_dual_page(const dinpage_t *page, const dinvalue_slot_t slots[
     lvgl_port_unlock();
 }
 
-void renderer_show_no_pages(void)
+void renderer_show_message(const char *title, const char *main, const char *hint)
 {
     lvgl_port_lock(0);
+    set_single_visible(false);
     set_dual_visible(false);
-    set_single_visible(true);
-    lv_obj_set_hidden(s_label_top, false);
-    lv_obj_set_style_text_color(s_label_value, color_for_state(SLOT_NO_DATA), 0);
-    lv_label_set_text(s_label_top, "");
-    lv_label_set_text(s_label_value, "No pages");
-    lv_label_set_text(s_label_unit, "configured");
+    lv_obj_set_hidden(s_label_top, true);
+    lv_obj_set_hidden(s_link_dot, true);
+    lv_label_set_text(s_msg_title, title);
+    lv_label_set_text(s_msg_main, main);
+    lv_label_set_text(s_msg_hint, hint);
+    set_msg_visible(true);
     light_after_first_frame();
+    lvgl_port_unlock();
+}
+
+void renderer_set_link_dot(link_dot_t dot)
+{
+    lvgl_port_lock(0);
+    if (dot == LINK_DOT_NONE) {
+        lv_obj_set_hidden(s_link_dot, true);
+    } else {
+        lv_obj_set_style_bg_color(s_link_dot, lv_color_hex(dot == LINK_DOT_RED ? 0xFF4040 : 0xFFB000), 0);
+        lv_obj_set_hidden(s_link_dot, false);
+    }
     lvgl_port_unlock();
 }

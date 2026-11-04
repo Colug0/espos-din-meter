@@ -68,8 +68,17 @@ void renderer_show_page(const dinpage_t *page, const dinvalue_slot_t *slot);
 /* Two-value page: two captioned values side by side, no title row. */
 void renderer_show_dual_page(const dinpage_t *page, const dinvalue_slot_t slots[2]);
 
-/* Shown when no pages are configured at all. */
-void renderer_show_no_pages(void);
+/* Three centred lines in place of a page: setup, approval, no pages. */
+void renderer_show_message(const char *title, const char *main, const char *hint);
+
+typedef enum {
+    LINK_DOT_NONE,
+    LINK_DOT_RED,   /* no network */
+    LINK_DOT_AMBER, /* no Signal K */
+} link_dot_t;
+
+/* The corner dot on page screens; a message screen hides it. */
+void renderer_set_link_dot(link_dot_t dot);
 
 /* The runtime task: subscriptions from the page list, value cache, encoder
  * paging, rendering. After espos_start() and dinmeter_pages_init(). */

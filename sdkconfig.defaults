@@ -9,11 +9,12 @@ CONFIG_IDF_TARGET="esp32s3"
 # ---- CPU
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 
-# ---- LVGL (Kconfig-configured, through esp_lvgl_port). No animations, the two
+# ---- LVGL (Kconfig-configured, through esp_lvgl_port). No animations, the three
 # font sizes the renderer uses, and a 16 KB object pool: the 64 KB default
 # left about 18 KB of heap on this PSRAM-less board and WiFi, HTTP and the
 # Signal K stream began to fail. The UI is a handful of labels.
 CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_24=y
 CONFIG_LV_FONT_MONTSERRAT_48=y
 CONFIG_LV_THEME_DEFAULT_TRANSITION_TIME=0
 CONFIG_LV_MEM_SIZE=16384

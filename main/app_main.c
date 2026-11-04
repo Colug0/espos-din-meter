@@ -21,6 +21,7 @@
 #include "espos.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "link_state.h"
 #include "runtime_internal.h"
 
 static const char *TAG = "din_meter";
@@ -77,6 +78,8 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(
         esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, on_wifi_connected, NULL));
+
+    ESP_ERROR_CHECK(link_state_init());
 
     espos_start_opts_t opts = ESPOS_START_OPTS_DEFAULT;
     opts.app_name = "din-meter";
