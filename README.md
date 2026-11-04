@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Thomas Christoffel -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # espos-din-meter
 
 Signal K values on an [M5Stack DIN Meter](https://docs.m5stack.com/en/core/DinMeter):
@@ -5,8 +8,8 @@ a small display for a DIN rail in the switch panel. It shows one or two values
 per page, for example battery charge and current, tank levels, depth or wind.
 Turn the knob for the next page.
 
-The display reads the values from your Signal K server over WiFi, at most once
-a second. A value that stops arriving turns grey; a value of the wrong type
+The display reads the values from your Signal K server over WiFi, as often as
+each page asks for: once a second unless you set another interval. A value that stops arriving turns grey; a value of the wrong type
 shows `XX` in red, never a wrong number. Nothing is written to Signal K, and
 no plugin is needed on the server.
 
@@ -95,8 +98,9 @@ plugin, or on the device's OTA tab: paste the link to the release's
 `din-meter-esp32s3-vX.Y.Z-ota.bin` under **From a URL**. Settings and pages
 are kept.
 
-* Releases are signed. A DIN Meter that ran other firmware, including a build
-  of your own, needs one USB flash of a release before it takes OTA updates.
+* Releases are signed. A DIN Meter running firmware signed with another key
+  (another project, or a build of your own) needs one USB flash of a release
+  before it takes OTA updates.
 * An OTA update replaces the firmware, not the web pages. When the release
   notes say the web pages changed, flash over USB to get them.
 
