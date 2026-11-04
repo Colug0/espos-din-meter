@@ -11,3 +11,6 @@ idf_component_register(
     PRIV_REQUIRES dinmeter_hal dinmeter_pages espos_core espos_event espos_net espos_wifi espos_sk espos_ota espos_config
                   esp_event esp_wifi esp_timer espressif__cjson
                   lvgl__lvgl espressif__esp_lvgl_port)
+
+# The "display" settings namespace (brightness). After idf_component_register.
+espos_config_add_descriptor(config/display.json)

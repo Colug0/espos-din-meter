@@ -2,8 +2,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 #include "dinmeter_hal/display.h"
 
+#include <stdatomic.h>
+
 #include "dinmeter_hal/board.h"
-#include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/spi_master.h"
 #include "esp_check.h"
 #include "esp_lcd_panel_vendor.h"
@@ -17,18 +19,39 @@
 #define LCD_GAP_X 40
 #define LCD_GAP_Y 52
 
+/* Backlight PWM on GPIO9 at a low frequency, as M5GFX drives M5 backlights:
+ * an earlier attempt at 5 kHz left the panel black. 1 % maps to a duty of
+ * 16/255 rather than near zero, so the lowest setting stays readable. */
+#define BL_LEDC_TIMER LEDC_TIMER_1
+#define BL_LEDC_CHANNEL LEDC_CHANNEL_7
+#define BL_FREQ_HZ 256
+#define BL_DUTY_MIN 16
+#define BL_DUTY_MAX 255
+
 static const char *TAG = "din_display";
+static atomic_uint s_brightness = 80;
+static atomic_bool s_backlight_on;
 static esp_lcd_panel_handle_t s_panel;
 static esp_lcd_panel_io_handle_t s_io;
 
 esp_err_t dinmeter_display_init(void)
 {
-    gpio_config_t bl_cfg = {
-        .pin_bit_mask = 1ULL << DINMETER_PIN_LCD_BL,
-        .mode = GPIO_MODE_OUTPUT,
+    ledc_timer_config_t timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_8_BIT,
+        .timer_num = BL_LEDC_TIMER,
+        .freq_hz = BL_FREQ_HZ,
+        .clk_cfg = LEDC_AUTO_CLK,
     };
-    ESP_RETURN_ON_ERROR(gpio_config(&bl_cfg), TAG, "backlight gpio");
-    gpio_set_level(DINMETER_PIN_LCD_BL, 0);
+    ESP_RETURN_ON_ERROR(ledc_timer_config(&timer), TAG, "backlight timer");
+    ledc_channel_config_t channel = {
+        .gpio_num = DINMETER_PIN_LCD_BL,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = BL_LEDC_CHANNEL,
+        .timer_sel = BL_LEDC_TIMER,
+        .duty = 0,
+    };
+    ESP_RETURN_ON_ERROR(ledc_channel_config(&channel), TAG, "backlight channel");
 
     spi_bus_config_t buscfg = {
         .mosi_io_num = DINMETER_PIN_LCD_MOSI,
@@ -69,9 +92,32 @@ esp_err_t dinmeter_display_init(void)
     return ESP_OK;
 }
 
+static void apply_brightness(void)
+{
+    uint32_t duty = 0;
+    if (atomic_load(&s_backlight_on)) {
+        unsigned pct = atomic_load(&s_brightness);
+        duty = BL_DUTY_MIN + (BL_DUTY_MAX - BL_DUTY_MIN) * (pct - 1) / 99;
+    }
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, BL_LEDC_CHANNEL, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, BL_LEDC_CHANNEL);
+}
+
 void dinmeter_display_backlight_on(void)
 {
-    gpio_set_level(DINMETER_PIN_LCD_BL, 1);
+    atomic_store(&s_backlight_on, true);
+    apply_brightness();
+}
+
+void dinmeter_display_set_brightness(uint8_t percent)
+{
+    if (percent < 1) {
+        percent = 1;
+    } else if (percent > 100) {
+        percent = 100;
+    }
+    atomic_store(&s_brightness, percent);
+    apply_brightness();
 }
 
 esp_lcd_panel_io_handle_t dinmeter_display_io(void)

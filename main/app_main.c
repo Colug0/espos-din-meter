@@ -8,6 +8,7 @@
  */
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "dinmeter_hal/board.h"
 #include "dinmeter_hal/display.h"
@@ -19,6 +20,8 @@
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "espos.h"
+#include "espos_cfg_keys.h"
+#include "espos_config.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "link_state.h"
@@ -53,6 +56,21 @@ static void on_wifi_connected(void *arg, esp_event_base_t base, int32_t id, void
     esp_wifi_disconnect();
 }
 
+static void apply_brightness_setting(void)
+{
+    int32_t pct = 80;
+    espos_config_get_i32(ESPOS_CFG_NS_DISPLAY, ESPOS_CFG_DISPLAY_BRIGHTNESS, &pct);
+    dinmeter_display_set_brightness((uint8_t)pct);
+}
+
+/* Runs on the writer's task (httpd); the HAL call is safe from any task. */
+static void on_config_change(const char *ns, const char *key, void *arg)
+{
+    if (strcmp(ns, ESPOS_CFG_NS_DISPLAY) == 0 && strcmp(key, ESPOS_CFG_DISPLAY_BRIGHTNESS) == 0) {
+        apply_brightness_setting();
+    }
+}
+
 /* espos_start()'s before_network hook: NVS and config are up. */
 static esp_err_t board_up(void *arg)
 {
@@ -65,6 +83,8 @@ static esp_err_t board_up(void *arg)
         ESP_LOGE(TAG, "display init failed (%s), running headless", esp_err_to_name(err));
     } else {
         s_panel_up = true;
+        apply_brightness_setting();
+        ESP_RETURN_ON_ERROR(espos_config_subscribe(on_config_change, NULL), TAG, "config subscribe");
     }
     err = dinmeter_input_init();
     if (err != ESP_OK) {
