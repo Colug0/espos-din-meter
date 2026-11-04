@@ -148,10 +148,14 @@ dependencies stay permissive.
 
 ## Pull requests to other repos
 
-espOS and the registry have their own `AGENTS.md`; read it first. Their shared
-rules: Conventional Commits with a subject of at most 50 characters,
-squash-merge, no version bumps, and **no AI attribution anywhere**. Land espOS
-changes first, then bump the submodule here in a separate PR.
+Read the target repo's own `AGENTS.md`, `CONTRIBUTING` and pull request
+template first; their rules win. AI attribution stays (`Co-Authored-By`,
+"Generated with Claude Code") unless the target repo itself asks for none:
+espos-p4-cockpit's `AGENTS.md`, for example, says "No AI attribution
+anywhere". The registry asks nothing of the kind. Conventional Commits with a
+subject of at most 50 characters, squash-merge and no version bumps hold for
+all of the espOS repos. Land espOS changes first, then bump the submodule here
+in a separate PR.
 
 ## Comments and docs
 
