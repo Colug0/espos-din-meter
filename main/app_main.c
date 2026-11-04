@@ -23,6 +23,7 @@
 #include "freertos/task.h"
 #include "brightness.h"
 #include "link_state.h"
+#include "sound.h"
 #include "runtime_internal.h"
 
 static const char *TAG = "din_meter";
@@ -94,6 +95,11 @@ void app_main(void)
         /* Brightness first: the runtime lights the panel after its first frame. */
         ESP_ERROR_CHECK(brightness_start());
         ESP_ERROR_CHECK(dinmeter_runtime_start());
+    }
+    /* A buzzer that cannot start costs the chirps, nothing else. */
+    esp_err_t err = sound_start();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "sound: %s", esp_err_to_name(err));
     }
     log_heap("runtime");
 

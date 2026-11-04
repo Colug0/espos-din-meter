@@ -6,11 +6,12 @@
 # requires is not compiled, and espos_start() starts only what is in the
 # build. Without espos_ota the device could never be updated in the field.
 idf_component_register(
-    SRCS app_main.c runtime.c renderer.c link_state.c brightness.c
+    SRCS app_main.c runtime.c renderer.c link_state.c brightness.c sound.c
     INCLUDE_DIRS "."
-    PRIV_REQUIRES dinmeter_hal dinmeter_pages espos_core espos_event espos_net espos_wifi espos_sk espos_ota espos_config
+    PRIV_REQUIRES dinmeter_hal dinmeter_pages espos_core espos_event espos_net espos_wifi espos_sk espos_ota espos_config espos_tone
                   esp_event esp_wifi esp_timer espressif__cjson
                   lvgl__lvgl espressif__esp_lvgl_port)
 
-# The "display" settings namespace (brightness). After idf_component_register.
+# The "display" and "sound" settings namespaces. After idf_component_register.
 espos_config_add_descriptor(config/display.json)
+espos_config_add_descriptor(config/sound.json)

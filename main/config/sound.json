@@ -1,0 +1,32 @@
+{
+  "namespace": "sound",
+  "version": 1,
+  "title": "Sound",
+  "description": "Tunes for the buzzer, in RTTTL. Each event names the tune it plays; an empty name means silence.",
+  "keys": [
+    {
+      "name": "tones",
+      "type": "string",
+      "maxLength": 1999,
+      "default": "[{\"name\":\"boot\",\"rtttl\":\"boot:d=16,o=6,b=200:c,e,g\"},{\"name\":\"click\",\"rtttl\":\"click:d=32,o=7,b=250:c\"}]",
+      "title": "Tunes",
+      "x": {"format": "table", "columns": ["name", "rtttl"]}
+    },
+    {
+      "name": "boot_tone",
+      "type": "string",
+      "maxLength": 24,
+      "default": "boot",
+      "title": "Start-up tune",
+      "description": "Played once the device has started. Empty = silent."
+    },
+    {
+      "name": "button_tone",
+      "type": "string",
+      "maxLength": 24,
+      "default": "click",
+      "title": "Button tune",
+      "description": "Played when the knob is pressed. Empty = silent."
+    }
+  ]
+}
