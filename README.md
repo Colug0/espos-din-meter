@@ -12,6 +12,8 @@ no plugin is needed on the server.
 
 Built on [espOS](https://github.com/signalk-espOS/espOS).
 
+![DIN Meter showing depth and true wind speed](docs/din-meter.jpg)
+
 ## Hardware
 
 | Board | Status | Flash |
@@ -115,4 +117,5 @@ See [AGENTS.md](AGENTS.md), "Build".
 
 ## Licence
 
-Apache-2.0.
+Apache-2.0. The photo `docs/din-meter.jpg` is © Thomas Christoffel,
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
