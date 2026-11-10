@@ -9,7 +9,7 @@ idf_component_register(
     SRCS app_main.c runtime.c renderer.c link_state.c brightness.c sound.c darkmode.c
     INCLUDE_DIRS "."
     PRIV_REQUIRES dinmeter_hal dinmeter_pages espos_core espos_event espos_net espos_wifi espos_sk espos_ota espos_config espos_tone nvs_flash
-                  esp_event esp_wifi esp_timer espressif__cjson
+                  esp_timer espressif__cjson
                   lvgl__lvgl espressif__esp_lvgl_port)
 
 # The "display" and "sound" settings namespaces. After idf_component_register.

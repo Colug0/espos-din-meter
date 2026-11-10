@@ -44,3 +44,8 @@ CONFIG_LWIP_TCP_WND_DEFAULT=2880
 # ---- Main task: espos_start() runs on it and left 320-448 bytes of the
 # 3584 default unused (measured with the stack reserve log line).
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=5120
+
+# ---- Config change subscribers: espOS takes six of the default 8 (two in
+# espos_wifi since 0.27.0), this firmware three (brightness, dark mode,
+# sound). The ninth failed with ESP_ERR_NO_MEM and left the device silent.
+CONFIG_ESPOS_CONFIG_MAX_SUBSCRIBERS=12

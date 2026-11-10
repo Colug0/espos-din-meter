@@ -6,7 +6,6 @@
  * watchdog. This file adds the DIN Meter's panel and encoder, the page store
  * and its API, and the runtime that shows the pages.
  */
-#include <stdatomic.h>
 #include <stdbool.h>
 
 #include "dinmeter_hal/board.h"
@@ -14,12 +13,12 @@
 #include "dinmeter_hal/input.h"
 #include "dinmeter_pages/pages.h"
 #include "esp_check.h"
-#include "esp_event.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_lvgl_port.h"
-#include "esp_wifi.h"
 #include "espos.h"
+#include "espos_cfg_keys.h"
+#include "espos_config.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "brightness.h"
@@ -66,27 +65,26 @@ static void log_budget(void)
     }
 }
 
-/* The ESP32 restarts without deauthenticating, so the access point still
- * holds the previous association when the new one arrives. A MikroTik hAP ax
- * S (RouterOS 7.24.4) then keeps the old station state and for minutes
- * delivers nothing to the device while its own frames get through. So the
- * first association of every boot is dropped on purpose: the access point
- * forgets the old station, and espOS connects again at once as a new one.
- * Costs about two seconds. Belongs in espOS once it is handled there. */
-static void on_wifi_connected(void *arg, esp_event_base_t base, int32_t id, void *data)
+/* The ESP32 restarts without deauthenticating, and a MikroTik hAP ax S
+ * (RouterOS 7.24) then keeps the old station and delivers no unicast to the
+ * device for minutes. espOS drops the first association of each boot when
+ * wifi.fresh_assoc is on (espOS #289); the boat this was built for needs it,
+ * so it is on unless the owner has chosen. Costs about two seconds a boot. */
+static void default_fresh_assoc(void)
 {
-    static atomic_bool done;
-    if (atomic_exchange(&done, true)) {
-        return;
+    if (!espos_config_is_set(ESPOS_CFG_NS_WIFI, ESPOS_CFG_WIFI_FRESH_ASSOC)) {
+        esp_err_t err = espos_config_set_bool(ESPOS_CFG_NS_WIFI, ESPOS_CFG_WIFI_FRESH_ASSOC, true);
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "wifi.fresh_assoc not turned on: %s", esp_err_to_name(err));
+        }
     }
-    ESP_LOGI(TAG, "dropping the first association so the access point starts a fresh one");
-    esp_wifi_disconnect();
 }
 
 /* espos_start()'s before_network hook: NVS and config are up. */
 static esp_err_t board_up(void *arg)
 {
     log_heap("boot");
+    default_fresh_assoc();
     ESP_RETURN_ON_ERROR(dinmeter_pages_init(), TAG, "pages");
     /* Without the panel the device still reaches the network, so its logs
      * can be read over WiFi. */
@@ -107,10 +105,6 @@ static esp_err_t board_up(void *arg)
 
 void app_main(void)
 {
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(
-        esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, on_wifi_connected, NULL));
-
     ESP_ERROR_CHECK(link_state_init());
 
     espos_start_opts_t opts = ESPOS_START_OPTS_DEFAULT;
