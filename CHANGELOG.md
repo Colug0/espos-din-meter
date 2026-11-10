@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.1 (2026-11-10)
+
+Built on espOS 0.27.0. An OTA update is enough: the web pages are unchanged.
+
+### Fixed
+
+- **After a power cut** the display reconnects within seconds behind routers that keep the old WiFi connection (MikroTik RouterOS 7). This now uses espOS's own setting, `wifi.fresh_assoc` under Config → WiFi; the DIN Meter turns it on unless you have set it yourself.
+- **Sound** could stay silent on espOS 0.27.0; it plays again.
+- From espOS 0.26.1: more network connections at once, so Signal K requests no longer fail while the web page is open.
+
+**Full Changelog**: https://github.com/Colug0/espos-din-meter/compare/v0.1.0...v0.1.1
+
 ## 0.1.0 (2026-11-04)
 
 First release: Signal K values on an M5Stack DIN Meter, built on espOS 0.26.0.
