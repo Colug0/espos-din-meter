@@ -49,8 +49,9 @@ signed OTA are espOS. This repo is the display on top.
   black; 200 Hz (M5Stack's own demo) works. Every LEDC timer on the S3 shares
   one clock source, so the backlight and buzzer timers both use APB.
 * The ESP32-S3 restarts without deauthenticating. The boat's MikroTik then
-  keeps the old station state and delivers nothing to the device for minutes,
-  so `app_main.c` drops the first association of every boot. Check the router
+  keeps the old station state and delivers nothing to the device for minutes.
+  espOS's `wifi.fresh_assoc` drops the first association of every boot;
+  `app_main.c` turns it on unless the owner has set it. Check the router
   log for "reconnecting" before blaming firmware for a lost Signal K link.
 * `espos_start_opts_t.board` is `"M5Stack DIN Meter"` and the CMake project
   name is `din_meter`. Never change either: OTA and the registry match on them.
