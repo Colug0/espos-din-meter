@@ -73,7 +73,10 @@ static void log_budget(void)
 static void default_fresh_assoc(void)
 {
     if (!espos_config_is_set(ESPOS_CFG_NS_WIFI, ESPOS_CFG_WIFI_FRESH_ASSOC)) {
-        espos_config_set_bool(ESPOS_CFG_NS_WIFI, ESPOS_CFG_WIFI_FRESH_ASSOC, true);
+        esp_err_t err = espos_config_set_bool(ESPOS_CFG_NS_WIFI, ESPOS_CFG_WIFI_FRESH_ASSOC, true);
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "wifi.fresh_assoc not turned on: %s", esp_err_to_name(err));
+        }
     }
 }
 
