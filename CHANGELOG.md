@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1 (2026-11-10)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other
+* fix: bump espOS to v0.27.0 by @github-actions[bot] in https://github.com/Colug0/espos-din-meter/pull/6
+
+
+**Full Changelog**: https://github.com/Colug0/espos-din-meter/compare/v0.1.0...v0.1.1
+
 ## 0.1.0 (2026-11-04)
 
 First release: Signal K values on an M5Stack DIN Meter, built on espOS 0.26.0.
