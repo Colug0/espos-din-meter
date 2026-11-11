@@ -105,7 +105,7 @@ jobs:
     if: needs.release-please.outputs.release_created == 'true'
     permissions:
       contents: write
-    uses: signalk-espOS/espOS/.github/workflows/release-firmware.yml@04e2c458441440747276328ea7df5e2aa8e451c3 # v0.26.0
+    uses: signalk-espOS/espOS/.github/workflows/release-firmware.yml@7263f68dbfa2b6ddf5138a87026ccadc140dae3d # v0.27.0
     with:
       name: din-meter
       builds: '[{"target": "esp32s3"}]'
