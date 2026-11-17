@@ -101,8 +101,9 @@ are kept.
 * Releases are signed. A DIN Meter running firmware signed with another key
   (another project, or a build of your own) needs one USB flash of a release
   before it takes OTA updates.
-* An OTA update replaces the firmware, not the web pages. When the release
-  notes say the web pages changed, flash over USB to get them.
+* An OTA update brings the web pages along with the firmware (from 0.2.0).
+  Updating from 0.1.x, the old pages can stay in the device's storage, but
+  the new ones are served first.
 
 ## When it misbehaves
 
