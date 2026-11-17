@@ -10,7 +10,7 @@ Built on espOS 0.29.2. Update over the air.
 
 ### Fixed
 
-- From espOS 0.29: lower memory use while Signal K streams values, and fixes to how the device checks the Signal K server's certificate.
+- From espOS 0.29: the Config page no longer needs one large block of memory to load, Signal K messages split over several frames are read correctly, and fixes to how the device checks the Signal K server's certificate.
 
 **Full Changelog**: https://github.com/Colug0/espos-din-meter/compare/v0.1.1...v0.2.0
 
