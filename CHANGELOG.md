@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 (2026-11-17)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Added
+* feat: web pages update over the air by @github-actions[bot] in https://github.com/Colug0/espos-din-meter/pull/12
+
+
+**Full Changelog**: https://github.com/Colug0/espos-din-meter/compare/v0.1.1...v0.2.0
+
 ## 0.1.1 (2026-11-10)
 
 Built on espOS 0.27.0. An OTA update is enough: the web pages are unchanged.
