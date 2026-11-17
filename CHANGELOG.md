@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 (2026-11-18)
+
+Built on espOS 0.29.2. Update over the air.
+
+### Added
+
+- **The web pages now update over the air too.** From this release on, an OTA update brings the Pages tab and the rest of the device's web page along with the firmware; no USB flash is needed for them any more.
+
+### Fixed
+
+- From espOS 0.29: the Config page no longer needs one large block of memory to load, Signal K messages split over several frames are read correctly, and fixes to how the device checks the Signal K server's certificate.
+
+**Full Changelog**: https://github.com/Colug0/espos-din-meter/compare/v0.1.1...v0.2.0
+
 ## 0.1.1 (2026-11-10)
 
 Built on espOS 0.27.0. An OTA update is enough: the web pages are unchanged.
