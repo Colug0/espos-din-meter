@@ -18,7 +18,7 @@ signed OTA are espOS. This repo is the display on top.
 | `components/dinmeter_pages` | Page document in NVS, its validation, `GET/PUT /api/v1/pages`, the unit conversion table and `GET /api/v1/pages/conversions` |
 | `main/` | `app_main.c` (espOS start, router workaround), `runtime.c` (subscriptions, value cache, paging), `renderer.c` (LVGL) |
 | `ui/` | Vite project: espOS's web UI from the submodule plus the Pages tab. `npm run build` writes `ui-dist/` |
-| `ui-dist/` | The gzipped bundle, **committed**, packed into the LittleFS image |
+| `ui-dist/` | The gzipped bundle, **committed**, built into the app image (`ESPOS_HTTPD_UI_DIR`) and also packed into the LittleFS image |
 
 ## Invariants
 
@@ -80,7 +80,8 @@ submodule out again.
 
 The web UI: `cd ui && npm ci && npm run build`, then commit `ui-dist/`. Build
 the UI first and the firmware after; a firmware build running at the same
-time packs the old bundle.
+time packs the old bundle. The UI imports espOS's sources from the submodule,
+so rebuild it after every espOS bump.
 
 Flash from Windows with esptool, always with `@flash_args` (it also resets
 `otadata`):
@@ -95,10 +96,10 @@ sdkconfig: espOS's defaults first, this repo's `sdkconfig.defaults` holds only
 what differs, a git-ignored `sdkconfig.local` takes bench overrides. Defaults
 reach a fresh `sdkconfig` only, so delete it after changing any of them.
 
-An OTA update replaces the app only. The web UI lives in the `storage`
-partition (`espos_project_ui_partition(DIR ...)`), which only a USB flash
-writes, so a release that changes `ui/` needs a USB flash to bring the new
-page to a device.
+`CMakeLists.txt` names `ui-dist/` as `ESPOS_HTTPD_UI_DIR` before
+`project()`, so the bundle is built into the app image and an OTA update
+brings the pages along (espOS 0.28.0 and later). `GET /api/v1/system/info`
+reports `"ui": "embedded"`.
 
 Verify on the device: `curl http://<device>/api/v1/logs?limit=200`,
 `/api/v1/system/info`, `/api/v1/sk/status`, `/api/v1/pages`.

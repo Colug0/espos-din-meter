@@ -17,10 +17,14 @@ include("${CMAKE_CURRENT_LIST_DIR}/espos/cmake/espos_project.cmake")
 espos_project_prologue(NAME "din-meter"
                        PARTITIONS "${ESPOS_PARTITIONS_DIR}/8mb.csv")
 
+# espOS's web UI plus the Pages tab, built by `npm run build` in ui/ and
+# committed as ui-dist/. Named before project() so espos_httpd builds it into
+# the app image: an OTA update then brings the pages along with the firmware.
+idf_build_set_property(ESPOS_HTTPD_UI_DIR "${CMAKE_CURRENT_LIST_DIR}/ui-dist")
+
 # The registry "app" and the OTA project check. Never rename it: every device
 # in the field would refuse the renamed firmware's updates.
 project(din_meter)
 
-# espOS's web UI plus the Pages tab, built by `npm run build` in ui/ and
-# committed as ui-dist/.
-espos_project_ui_partition(NAME "din-meter" DIR "${CMAKE_CURRENT_LIST_DIR}/ui-dist")
+# The same bundle in the storage partition, for a build with the embed off.
+espos_project_ui_partition(NAME "din-meter")
